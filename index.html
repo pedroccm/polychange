@@ -502,13 +502,14 @@ function renderEventsList(events) {
   }
 
   container.innerHTML = events.map((ev, i) => {
-    const vol = ev.volume >= 1000000 ? `$${(ev.volume/1000000).toFixed(1)}M`
-              : ev.volume >= 1000 ? `$${(ev.volume/1000).toFixed(0)}K`
-              : `$${ev.volume.toFixed(0)}`;
+    const v = ev.volume || 0;
+    const vol = v >= 1000000 ? `$${(v/1000000).toFixed(1)}M`
+              : v >= 1000 ? `$${(v/1000).toFixed(0)}K`
+              : `$${v.toFixed(0)}`;
 
     const outcomes = (ev.outcomes || []).map(o => {
-      const price = Math.round(o.last_price * 100);
-      const label = o.outcome || o.question.substring(0, 20);
+      const price = Math.round((o.last_price || 0) * 100);
+      const label = o.outcome || (o.question || '').substring(0, 20);
       return `<span class="ev-out">${label} <span class="price">${price}¢</span></span>`;
     }).join('');
 
@@ -540,9 +541,10 @@ async function selectEvent(event) {
   // Update header
   document.getElementById('event-title').textContent = event.title;
 
-  const vol = event.volume >= 1000000 ? `$${(event.volume/1000000).toFixed(1)}M`
-            : event.volume >= 1000 ? `$${(event.volume/1000).toFixed(0)}K`
-            : `$${(event.volume||0).toFixed(0)}`;
+  const evVol = event.volume || 0;
+  const vol = evVol >= 1000000 ? `$${(evVol/1000000).toFixed(1)}M`
+            : evVol >= 1000 ? `$${(evVol/1000).toFixed(0)}K`
+            : `$${evVol.toFixed(0)}`;
   document.getElementById('event-meta').innerHTML =
     `Outcomes: <span>${currentOutcomes.length}</span> | Volume: <span>${vol}</span> | End: <span>${event.end_date || 'N/A'}</span>`;
 
