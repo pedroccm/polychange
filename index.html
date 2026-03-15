@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1400, initial-scale=0.3">
-  <title>PolyChange - Football Exchange</title>
+  <title>PolyChange - Exchange Trading</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       font-family: 'Segoe UI', Consolas, monospace;
       background: #1a1a2e;
@@ -23,12 +22,7 @@
       gap: 12px;
       border-bottom: 1px solid #0f3460;
     }
-    .topbar .logo {
-      font-weight: bold;
-      font-size: 16px;
-      color: #00d4ff;
-      letter-spacing: 1px;
-    }
+    .topbar .logo { font-weight: bold; font-size: 16px; color: #00d4ff; letter-spacing: 1px; }
     .topbar input {
       flex: 1;
       background: #0a0a1a;
@@ -39,7 +33,7 @@
       font-size: 13px;
     }
     .topbar input::placeholder { color: #555; }
-    .topbar .btn-load {
+    .topbar .btn {
       background: #0f3460;
       color: #00d4ff;
       border: 1px solid #00d4ff;
@@ -47,35 +41,38 @@
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
-    }
-    .topbar .btn-load:hover { background: #00d4ff; color: #0a0a1a; }
-
-    /* ACCOUNT BAR */
-    .account-bar {
-      background: #16213e;
-      padding: 6px 16px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      border-bottom: 1px solid #0f3460;
       font-size: 12px;
     }
-    .account-bar .balance { color: #00ff88; font-weight: bold; font-size: 14px; }
-    .account-bar .stat { color: #888; }
-    .account-bar .stat span { color: #ccc; }
+    .topbar .btn:hover { background: #00d4ff; color: #0a0a1a; }
+
+    /* STATUS BAR */
+    .status-bar {
+      background: #12122a;
+      padding: 4px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #0f3460;
+      font-size: 11px;
+      color: #666;
+    }
+    .status-bar .connected { color: #00ff88; }
+    .status-bar .refresh-info { margin-left: auto; }
 
     /* MAIN LAYOUT */
     .main {
       display: grid;
-      grid-template-columns: 260px 1fr 280px;
-      height: calc(100vh - 80px);
+      grid-template-columns: 300px 1fr 280px;
+      height: calc(100vh - 72px);
     }
 
-    /* LEFT PANEL - MATCHES */
+    /* LEFT PANEL */
     .panel-left {
       background: #12122a;
       border-right: 1px solid #0f3460;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
     .panel-title {
       padding: 8px 12px;
@@ -86,107 +83,97 @@
       letter-spacing: 1px;
       color: #00d4ff;
     }
-    .match-item {
+    .search-box {
+      padding: 8px;
+      border-bottom: 1px solid #1a1a3e;
+    }
+    .search-box input {
+      width: 100%;
+      background: #0a0a1a;
+      border: 1px solid #0f3460;
+      color: #e0e0e0;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .search-box input::placeholder { color: #444; }
+    .events-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .event-item {
       padding: 8px 10px;
       border-bottom: 1px solid #1a1a3e;
       cursor: pointer;
     }
-    .match-item:hover { background: #1a1a3e; }
-    .match-item.active { background: #0f3460; border-left: 3px solid #00d4ff; }
-    .match-item .match-teams {
-      font-size: 12px;
-      font-weight: bold;
-      margin-bottom: 4px;
+    .event-item:hover { background: #1a1a3e; }
+    .event-item.active { background: #0f3460; border-left: 3px solid #00d4ff; }
+    .event-item .ev-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; line-height: 1.3; }
+    .event-item .ev-meta {
+      font-size: 10px; color: #666;
+      display: flex; justify-content: space-between;
     }
-    .match-item .match-meta {
-      font-size: 10px;
-      color: #666;
-      display: flex;
-      justify-content: space-between;
+    .event-item .ev-outcomes {
+      display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
     }
-    .match-item .match-odds {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
+    .event-item .ev-out {
+      font-size: 10px; padding: 2px 6px; border-radius: 2px;
+      background: #1a1a3e; color: #888;
     }
-    .match-item .mini-odd {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 2px;
-      text-align: center;
-      flex: 1;
-    }
-    .match-item .mini-odd.home { background: #0a2a4a; color: #6abcff; }
-    .match-item .mini-odd.draw { background: #1a1a3e; color: #aaa; }
-    .match-item .mini-odd.away { background: #4a1a2a; color: #ff6a8a; }
-    .match-item .live-badge {
-      background: #ff4444;
-      color: #fff;
-      padding: 1px 5px;
-      border-radius: 2px;
-      font-size: 9px;
-      font-weight: bold;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .event-item .ev-out .price { color: #00d4ff; font-weight: bold; }
+    .event-item .ev-vol { color: #555; font-size: 10px; }
+    .loading-msg { padding: 20px; text-align: center; color: #555; }
 
-    /* CENTER - 3 LADDERS */
+    /* CENTER PANEL */
     .panel-center {
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-
-    /* Match header */
-    .match-header {
+    .event-header {
       padding: 10px 16px;
       background: #16213e;
       border-bottom: 1px solid #0f3460;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
-    .match-header .teams { font-size: 16px; font-weight: bold; color: #fff; }
-    .match-header .score {
-      font-size: 24px;
-      font-weight: bold;
-      color: #00d4ff;
-      margin: 0 16px;
-    }
-    .match-header .match-info { font-size: 11px; color: #666; }
-    .match-header .match-info span { color: #00d4ff; }
+    .event-header h2 { font-size: 15px; color: #fff; margin-bottom: 4px; }
+    .event-header .meta { font-size: 11px; color: #666; }
+    .event-header .meta span { color: #00d4ff; }
 
-    /* 3 Ladders container */
+    /* LADDERS ROW */
     .ladders-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      display: flex;
       flex: 1;
       overflow: hidden;
       gap: 1px;
       background: #0f3460;
     }
-
-    /* Individual ladder */
     .ladder-panel {
+      flex: 1;
       display: flex;
       flex-direction: column;
       background: #1a1a2e;
       overflow: hidden;
+      min-width: 0;
     }
     .ladder-title {
       text-align: center;
-      padding: 6px;
+      padding: 6px 4px;
       font-weight: bold;
-      font-size: 13px;
+      font-size: 11px;
       border-bottom: 1px solid #0f3460;
+      background: #0a2a4a;
+      color: #6abcff;
     }
-    .ladder-title.home { background: #0a2a4a; color: #6abcff; }
-    .ladder-title.draw { background: #1a1a3e; color: #ccc; }
-    .ladder-title.away { background: #4a1a2a; color: #ff6a8a; }
     .ladder-title .best-price {
       font-size: 18px;
       display: block;
       margin-top: 2px;
+      color: #00d4ff;
+    }
+    .ladder-title .best-spread {
+      font-size: 10px;
+      color: #888;
+      display: block;
     }
 
     .ladder-scroll {
@@ -198,12 +185,10 @@
       border-collapse: collapse;
     }
     .ladder-table th {
-      position: sticky;
-      top: 0;
+      position: sticky; top: 0;
       padding: 4px 4px;
       font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
       z-index: 2;
     }
     .ladder-table th.back-h { background: #0d3560; color: #6abcff; }
@@ -218,58 +203,45 @@
       font-size: 12px;
     }
 
-    /* Back (YES) cells */
     .ladder-table .back-cell {
-      background: #0d3560;
-      color: #6abcff;
-      cursor: pointer;
-      position: relative;
+      background: #0d3560; color: #6abcff;
+      cursor: pointer; position: relative;
     }
     .ladder-table .back-cell:hover { background: #1a5a90; }
     .ladder-table .back-cell .bar {
-      position: absolute;
-      top: 1px; bottom: 1px; right: 0;
-      background: #4a9eff;
-      opacity: 0.2;
-      border-radius: 1px;
+      position: absolute; top: 1px; bottom: 1px; right: 0;
+      background: #4a9eff; opacity: 0.25; border-radius: 1px;
     }
     .ladder-table .back-cell .val { position: relative; z-index: 1; }
 
-    /* Price column */
     .ladder-table .price-cell {
-      font-weight: bold;
-      color: #fff;
-      background: #1a1a2e;
-      font-size: 13px;
-      min-width: 40px;
+      font-weight: bold; color: #fff;
+      background: #1a1a2e; font-size: 13px; min-width: 36px;
     }
-    .ladder-table .price-cell.current {
-      background: #2a2a4e;
-      color: #00d4ff;
-      box-shadow: inset 0 0 8px rgba(0,212,255,0.2);
+    .ladder-table .price-cell.best-bid {
+      background: #0a3a5a; color: #6abcff;
+      box-shadow: inset 0 0 6px rgba(74,158,255,0.3);
     }
-    .ladder-table .price-cell.my-pos {
-      background: #2a2a00;
-      border-left: 2px solid #ffcc00;
-      border-right: 2px solid #ffcc00;
+    .ladder-table .price-cell.best-ask {
+      background: #4a1a2a; color: #ff6a8a;
+      box-shadow: inset 0 0 6px rgba(255,106,138,0.3);
     }
 
-    /* Lay (NO) cells */
     .ladder-table .lay-cell {
-      background: #3d1525;
-      color: #ff6a8a;
-      cursor: pointer;
-      position: relative;
+      background: #3d1525; color: #ff6a8a;
+      cursor: pointer; position: relative;
     }
     .ladder-table .lay-cell:hover { background: #6a2a3a; }
     .ladder-table .lay-cell .bar {
-      position: absolute;
-      top: 1px; bottom: 1px; left: 0;
-      background: #ff6a8a;
-      opacity: 0.2;
-      border-radius: 1px;
+      position: absolute; top: 1px; bottom: 1px; left: 0;
+      background: #ff6a8a; opacity: 0.25; border-radius: 1px;
     }
     .ladder-table .lay-cell .val { position: relative; z-index: 1; }
+
+    .ladder-table .back-cell.has-vol { background: #104a80; }
+    .ladder-table .lay-cell.has-vol { background: #5a1a30; }
+
+    .no-data { padding: 40px; text-align: center; color: #444; font-size: 14px; }
 
     /* ORDER TICKET */
     .order-ticket {
@@ -281,89 +253,48 @@
       align-items: center;
       flex-wrap: wrap;
     }
-    .ticket-selection {
-      display: flex;
-      gap: 4px;
+    .ticket-out {
+      display: flex; gap: 4px;
     }
-    .ticket-selection .sel-btn {
-      padding: 5px 12px;
+    .ticket-out .out-btn {
+      padding: 5px 10px;
       border: 1px solid #333;
-      background: #1a1a2e;
-      color: #888;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
+      background: #1a1a2e; color: #888;
+      border-radius: 3px; cursor: pointer;
+      font-size: 11px; font-weight: bold;
     }
-    .ticket-selection .sel-btn.active-home { border-color: #6abcff; color: #6abcff; background: #0a2a4a; }
-    .ticket-selection .sel-btn.active-draw { border-color: #ccc; color: #ccc; background: #2a2a3e; }
-    .ticket-selection .sel-btn.active-away { border-color: #ff6a8a; color: #ff6a8a; background: #4a1a2a; }
+    .ticket-out .out-btn.active { border-color: #00d4ff; color: #00d4ff; background: #0a2a4a; }
 
-    .ticket-side {
-      display: flex;
-      gap: 4px;
+    .ticket-side { display: flex; gap: 4px; }
+    .ticket-side .s-btn {
+      padding: 5px 12px; border: none; border-radius: 3px;
+      font-weight: bold; cursor: pointer; font-size: 12px;
     }
-    .ticket-side .side-btn {
-      padding: 5px 14px;
-      border: none;
-      border-radius: 3px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .ticket-side .side-btn.back { background: #0d3560; color: #6abcff; }
-    .ticket-side .side-btn.back.active { background: #1a6aaa; color: #fff; }
-    .ticket-side .side-btn.lay { background: #3d1525; color: #ff6a8a; }
-    .ticket-side .side-btn.lay.active { background: #8a2a4a; color: #fff; }
+    .ticket-side .s-btn.back { background: #0d3560; color: #6abcff; }
+    .ticket-side .s-btn.back.active { background: #1a6aaa; color: #fff; }
+    .ticket-side .s-btn.lay { background: #3d1525; color: #ff6a8a; }
+    .ticket-side .s-btn.lay.active { background: #8a2a4a; color: #fff; }
 
-    .ticket-field {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
+    .t-field { display: flex; flex-direction: column; gap: 1px; }
+    .t-field label { font-size: 10px; color: #666; }
+    .t-field input {
+      background: #0a0a1a; border: 1px solid #0f3460;
+      color: #e0e0e0; padding: 5px 8px; border-radius: 3px;
+      width: 70px; text-align: center; font-size: 13px;
     }
-    .ticket-field label { font-size: 10px; color: #666; }
-    .ticket-field input {
-      background: #0a0a1a;
-      border: 1px solid #0f3460;
-      color: #e0e0e0;
-      padding: 5px 8px;
-      border-radius: 3px;
-      width: 70px;
-      text-align: center;
-      font-size: 13px;
-    }
-    .submit-btn {
-      padding: 5px 20px;
-      background: #00d4ff;
-      color: #0a0a1a;
-      border: none;
-      border-radius: 3px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .submit-btn:hover { background: #00eeff; }
-    .ticket-payout {
-      color: #00ff88;
-      font-size: 11px;
-      margin-left: auto;
-    }
-
-    /* Quick stakes */
-    .quick-stakes {
-      display: flex;
-      gap: 3px;
-    }
+    .quick-stakes { display: flex; gap: 3px; }
     .quick-stakes button {
-      background: #1a1a3e;
-      color: #888;
-      border: 1px solid #2a2a4e;
-      padding: 4px 8px;
-      border-radius: 2px;
-      font-size: 10px;
-      cursor: pointer;
+      background: #1a1a3e; color: #888; border: 1px solid #2a2a4e;
+      padding: 4px 8px; border-radius: 2px; font-size: 10px; cursor: pointer;
     }
     .quick-stakes button:hover { background: #2a2a4e; color: #ccc; }
+    .submit-btn {
+      padding: 5px 20px; background: #00d4ff; color: #0a0a1a;
+      border: none; border-radius: 3px; font-weight: bold;
+      cursor: pointer; font-size: 13px;
+    }
+    .submit-btn:hover { background: #00eeff; }
+    .t-payout { color: #00ff88; font-size: 11px; margin-left: auto; }
 
     /* RIGHT PANEL */
     .panel-right {
@@ -371,54 +302,35 @@
       border-left: 1px solid #0f3460;
       overflow-y: auto;
     }
-
-    .position-item {
-      padding: 8px 10px;
-      border-bottom: 1px solid #1a1a3e;
+    .pos-item {
+      padding: 8px 10px; border-bottom: 1px solid #1a1a3e;
     }
-    .position-item .pos-market { font-size: 11px; color: #888; margin-bottom: 3px; }
-    .position-item .pos-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      margin-bottom: 2px;
+    .pos-item .pos-mkt { font-size: 11px; color: #888; margin-bottom: 3px; }
+    .pos-item .pos-row {
+      display: flex; justify-content: space-between;
+      font-size: 12px; margin-bottom: 2px;
     }
-    .pos-side-back { color: #6abcff; font-weight: bold; }
-    .pos-side-lay { color: #ff6a8a; font-weight: bold; }
-    .pos-pnl-pos { color: #00ff88; font-weight: bold; }
-    .pos-pnl-neg { color: #ff4444; font-weight: bold; }
-    .pos-actions button {
-      background: #2a1a1a;
-      color: #ff6a6a;
-      border: 1px solid #ff4444;
-      padding: 2px 8px;
-      border-radius: 2px;
-      font-size: 10px;
-      cursor: pointer;
-      margin-top: 3px;
+    .pos-back { color: #6abcff; font-weight: bold; }
+    .pos-lay { color: #ff6a8a; font-weight: bold; }
+    .pnl-pos { color: #00ff88; font-weight: bold; }
+    .pnl-neg { color: #ff4444; font-weight: bold; }
+    .pos-item button {
+      background: #2a1a1a; color: #ff6a6a; border: 1px solid #ff4444;
+      padding: 2px 8px; border-radius: 2px; font-size: 10px;
+      cursor: pointer; margin-top: 3px;
     }
-    .pos-actions button:hover { background: #ff4444; color: #fff; }
-
-    .order-item {
-      padding: 6px 10px;
-      border-bottom: 1px solid #1a1a3e;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
+    .pos-item button:hover { background: #ff4444; color: #fff; }
+    .ord-item {
+      padding: 6px 10px; border-bottom: 1px solid #1a1a3e;
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px;
     }
     .cancel-btn {
-      background: none;
-      border: 1px solid #ff4444;
-      color: #ff4444;
-      padding: 2px 6px;
-      border-radius: 2px;
-      font-size: 10px;
-      cursor: pointer;
+      background: none; border: 1px solid #ff4444; color: #ff4444;
+      padding: 2px 6px; border-radius: 2px; font-size: 10px; cursor: pointer;
     }
     .cancel-btn:hover { background: #ff4444; color: #fff; }
+    .empty-msg { padding: 12px; text-align: center; color: #444; font-size: 11px; }
 
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #0a0a1a; }
     ::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
@@ -426,416 +338,486 @@
 </head>
 <body>
 
-  <!-- TOP BAR -->
   <div class="topbar">
     <div class="logo">POLYCHANGE</div>
-    <input type="text" id="market-url" placeholder="Cole o link do evento Polymarket... (ex: https://polymarket.com/event/soccer-match...)" />
-    <button class="btn-load" onclick="loadMarket()">CARREGAR</button>
+    <input type="text" id="url-input" placeholder="Cole URL do Polymarket ou pesquise... (ex: soccer, nba, trump)" />
+    <button class="btn" onclick="searchOrLoad()">SEARCH</button>
+    <button class="btn" onclick="loadFromUrl()" style="background:#0a2a4a;">LOAD URL</button>
   </div>
 
-  <!-- ACCOUNT BAR -->
-  <div class="account-bar">
-    <div>Balance: <span class="balance">$1,247.83</span></div>
-    <div class="stat">Positions: <span>3</span></div>
-    <div class="stat">P&L: <span style="color:#00ff88">+$42.50</span></div>
-    <div class="stat">Exposure: <span>$380.00</span></div>
-    <div class="stat" style="margin-left:auto; color:#00ff88;">● Connected</div>
+  <div class="status-bar">
+    <span class="connected" id="status-dot">● API OK</span>
+    <span id="status-event">No event loaded</span>
+    <span class="refresh-info" id="refresh-info">Auto-refresh: 3s</span>
   </div>
 
-  <!-- MAIN LAYOUT -->
   <div class="main">
 
-    <!-- LEFT: MATCHES LIST -->
+    <!-- LEFT: EVENTS -->
     <div class="panel-left">
-      <div class="panel-title">Live Matches</div>
-
-      <div class="match-item active" onclick="selectMatch(this, 0)">
-        <div class="match-teams">Arsenal vs Chelsea</div>
-        <div class="match-meta">
-          <span>Premier League</span>
-          <span class="live-badge">LIVE 67'</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 52¢</div>
-          <div class="mini-odd draw">X · 28¢</div>
-          <div class="mini-odd away">2 · 20¢</div>
-        </div>
+      <div class="panel-title">Events</div>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Filter events..." oninput="filterEvents()" />
       </div>
-
-      <div class="match-item" onclick="selectMatch(this, 1)">
-        <div class="match-teams">Barcelona vs Real Madrid</div>
-        <div class="match-meta">
-          <span>La Liga</span>
-          <span class="live-badge">LIVE 34'</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 45¢</div>
-          <div class="mini-odd draw">X · 25¢</div>
-          <div class="mini-odd away">2 · 30¢</div>
-        </div>
-      </div>
-
-      <div class="match-item" onclick="selectMatch(this, 2)">
-        <div class="match-teams">PSG vs Bayern Munich</div>
-        <div class="match-meta">
-          <span>Champions League</span>
-          <span class="live-badge">LIVE 82'</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 35¢</div>
-          <div class="mini-odd draw">X · 22¢</div>
-          <div class="mini-odd away">2 · 43¢</div>
-        </div>
-      </div>
-
-      <div class="panel-title">Upcoming</div>
-
-      <div class="match-item" onclick="selectMatch(this, 3)">
-        <div class="match-teams">Man City vs Liverpool</div>
-        <div class="match-meta">
-          <span>Premier League</span>
-          <span style="color:#666">Today 20:00</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 40¢</div>
-          <div class="mini-odd draw">X · 27¢</div>
-          <div class="mini-odd away">2 · 33¢</div>
-        </div>
-      </div>
-
-      <div class="match-item" onclick="selectMatch(this, 4)">
-        <div class="match-teams">Juventus vs Inter Milan</div>
-        <div class="match-meta">
-          <span>Serie A</span>
-          <span style="color:#666">Tomorrow 15:00</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 38¢</div>
-          <div class="mini-odd draw">X · 30¢</div>
-          <div class="mini-odd away">2 · 32¢</div>
-        </div>
-      </div>
-
-      <div class="match-item" onclick="selectMatch(this, 5)">
-        <div class="match-teams">Flamengo vs Palmeiras</div>
-        <div class="match-meta">
-          <span>Brasileirão</span>
-          <span style="color:#666">Tomorrow 21:30</span>
-        </div>
-        <div class="match-odds">
-          <div class="mini-odd home">1 · 42¢</div>
-          <div class="mini-odd draw">X · 26¢</div>
-          <div class="mini-odd away">2 · 32¢</div>
-        </div>
+      <div class="events-list" id="events-list">
+        <div class="loading-msg">Search for events above</div>
       </div>
     </div>
 
-    <!-- CENTER: 3 LADDERS -->
+    <!-- CENTER: LADDERS -->
     <div class="panel-center">
-
-      <!-- Match header -->
-      <div class="match-header">
-        <div>
-          <div class="teams" id="header-teams">Arsenal vs Chelsea</div>
-          <div class="match-info">
-            Premier League &nbsp;|&nbsp; <span class="live-badge" style="font-size:11px;">LIVE 67'</span>
-            &nbsp;|&nbsp; Vol: <span>$342K</span>
-            &nbsp;|&nbsp; Matched: <span>$1.2M</span>
-          </div>
-        </div>
-        <div class="score" id="header-score">1 - 0</div>
+      <div class="event-header" id="event-header">
+        <h2 id="event-title">No event loaded</h2>
+        <div class="meta" id="event-meta">Search or paste a Polymarket URL to get started</div>
       </div>
 
-      <!-- 3 Ladders side by side -->
-      <div class="ladders-row">
-
-        <!-- HOME LADDER -->
-        <div class="ladder-panel">
-          <div class="ladder-title home">
-            HOME (Arsenal)
-            <span class="best-price" id="home-best">52¢</span>
-          </div>
-          <div class="ladder-scroll" id="home-scroll">
-            <table class="ladder-table">
-              <thead>
-                <tr>
-                  <th class="back-h">BACK $</th>
-                  <th class="price-h">¢</th>
-                  <th class="lay-h">LAY $</th>
-                </tr>
-              </thead>
-              <tbody id="home-ladder"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- DRAW LADDER -->
-        <div class="ladder-panel">
-          <div class="ladder-title draw">
-            DRAW
-            <span class="best-price" id="draw-best">28¢</span>
-          </div>
-          <div class="ladder-scroll" id="draw-scroll">
-            <table class="ladder-table">
-              <thead>
-                <tr>
-                  <th class="back-h">BACK $</th>
-                  <th class="price-h">¢</th>
-                  <th class="lay-h">LAY $</th>
-                </tr>
-              </thead>
-              <tbody id="draw-ladder"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- AWAY LADDER -->
-        <div class="ladder-panel">
-          <div class="ladder-title away">
-            AWAY (Chelsea)
-            <span class="best-price" id="away-best">20¢</span>
-          </div>
-          <div class="ladder-scroll" id="away-scroll">
-            <table class="ladder-table">
-              <thead>
-                <tr>
-                  <th class="back-h">BACK $</th>
-                  <th class="price-h">¢</th>
-                  <th class="lay-h">LAY $</th>
-                </tr>
-              </thead>
-              <tbody id="away-ladder"></tbody>
-            </table>
-          </div>
-        </div>
-
+      <div class="ladders-row" id="ladders-row">
+        <div class="no-data">Select an event to view the exchange ladder</div>
       </div>
 
       <!-- ORDER TICKET -->
-      <div class="order-ticket">
-        <div class="ticket-selection">
-          <button class="sel-btn active-home" id="sel-home" onclick="selectOutcome('home')">HOME</button>
-          <button class="sel-btn" id="sel-draw" onclick="selectOutcome('draw')">DRAW</button>
-          <button class="sel-btn" id="sel-away" onclick="selectOutcome('away')">AWAY</button>
-        </div>
+      <div class="order-ticket" id="order-ticket" style="display:none;">
+        <div class="ticket-out" id="ticket-outcomes"></div>
         <div class="ticket-side">
-          <button class="side-btn back active" id="side-back" onclick="selectSide('back')">BACK</button>
-          <button class="side-btn lay" id="side-lay" onclick="selectSide('lay')">LAY</button>
+          <button class="s-btn back active" id="side-back" onclick="setSide('back')">BACK</button>
+          <button class="s-btn lay" id="side-lay" onclick="setSide('lay')">LAY</button>
         </div>
-        <div class="ticket-field">
-          <label>Price</label>
-          <input type="number" id="order-price" value="52" min="1" max="99" onchange="updateTicket()" oninput="updateTicket()" />
+        <div class="t-field">
+          <label>Price ¢</label>
+          <input type="number" id="ord-price" value="50" min="1" max="99" oninput="updateTicket()" />
         </div>
-        <div class="ticket-field">
-          <label>Qty</label>
-          <input type="number" id="order-qty" value="20" min="1" onchange="updateTicket()" oninput="updateTicket()" />
+        <div class="t-field">
+          <label>Size $</label>
+          <input type="number" id="ord-size" value="10" min="1" oninput="updateTicket()" />
         </div>
         <div class="quick-stakes">
-          <button onclick="setStake(5)">$5</button>
-          <button onclick="setStake(10)">$10</button>
-          <button onclick="setStake(25)">$25</button>
-          <button onclick="setStake(50)">$50</button>
-          <button onclick="setStake(100)">$100</button>
+          <button onclick="document.getElementById('ord-size').value=5;updateTicket()">$5</button>
+          <button onclick="document.getElementById('ord-size').value=10;updateTicket()">$10</button>
+          <button onclick="document.getElementById('ord-size').value=25;updateTicket()">$25</button>
+          <button onclick="document.getElementById('ord-size').value=50;updateTicket()">$50</button>
+          <button onclick="document.getElementById('ord-size').value=100;updateTicket()">$100</button>
         </div>
-        <div class="ticket-field">
-          <label>Cost</label>
-          <input type="text" id="order-cost" value="$10.40" readonly style="color:#00d4ff;" />
-        </div>
-        <button class="submit-btn" onclick="submitOrder()">PLACE ORDER</button>
-        <div class="ticket-payout" id="ticket-payout">Payout $20.00 | Profit $9.60</div>
+        <button class="submit-btn" onclick="placeOrder()">PLACE ORDER</button>
+        <div class="t-payout" id="t-payout"></div>
       </div>
     </div>
 
-    <!-- RIGHT: POSITIONS & ORDERS -->
+    <!-- RIGHT: POSITIONS -->
     <div class="panel-right">
       <div class="panel-title">Open Positions</div>
-
-      <div class="position-item">
-        <div class="pos-market">Arsenal vs Chelsea</div>
-        <div class="pos-row">
-          <div><span class="pos-side-back">BACK HOME</span> 50 @ 48¢</div>
-          <div class="pos-pnl-pos">+$2.00</div>
-        </div>
-        <div class="pos-row">
-          <span style="color:#555">Cost: $24.00</span>
-          <span style="color:#555">Value: $26.00</span>
-        </div>
-        <div class="pos-actions"><button>CLOSE</button></div>
+      <div id="positions-list">
+        <div class="empty-msg">No positions</div>
       </div>
-
-      <div class="position-item">
-        <div class="pos-market">Barcelona vs Real Madrid</div>
-        <div class="pos-row">
-          <div><span class="pos-side-lay">LAY DRAW</span> 80 @ 27¢</div>
-          <div class="pos-pnl-pos">+$4.80</div>
-        </div>
-        <div class="pos-row">
-          <span style="color:#555">Liability: $58.40</span>
-          <span style="color:#555">P&L: +$4.80</span>
-        </div>
-        <div class="pos-actions"><button>CLOSE</button></div>
-      </div>
-
-      <div class="position-item">
-        <div class="pos-market">PSG vs Bayern</div>
-        <div class="pos-row">
-          <div><span class="pos-side-back">BACK AWAY</span> 100 @ 40¢</div>
-          <div class="pos-pnl-neg">-$3.00</div>
-        </div>
-        <div class="pos-row">
-          <span style="color:#555">Cost: $40.00</span>
-          <span style="color:#555">Value: $37.00</span>
-        </div>
-        <div class="pos-actions"><button>CLOSE</button></div>
-      </div>
-
       <div class="panel-title">Pending Orders</div>
-
-      <div class="order-item">
-        <div>
-          <span class="pos-side-back">BACK</span> HOME 30 @ 50¢<br>
-          <span style="color:#555;font-size:10px;">Arsenal vs Chelsea</span>
-        </div>
-        <button class="cancel-btn">CANCEL</button>
+      <div id="orders-list">
+        <div class="empty-msg">No orders</div>
       </div>
-
-      <div class="order-item">
-        <div>
-          <span class="pos-side-lay">LAY</span> AWAY 40 @ 22¢<br>
-          <span style="color:#555;font-size:10px;">Arsenal vs Chelsea</span>
-        </div>
-        <button class="cancel-btn">CANCEL</button>
-      </div>
-
-      <div class="panel-title">Trade History</div>
-
-      <div class="order-item" style="opacity:0.5;">
-        <div>
-          <span class="pos-side-back">BACK</span> HOME 50 @ 48¢ → <span style="color:#00ff88">FILLED</span><br>
-          <span style="color:#555;font-size:10px;">Arsenal vs Chelsea • 14:32</span>
-        </div>
-      </div>
-      <div class="order-item" style="opacity:0.5;">
-        <div>
-          <span class="pos-side-lay">LAY</span> DRAW 80 @ 27¢ → <span style="color:#00ff88">FILLED</span><br>
-          <span style="color:#555;font-size:10px;">Barça vs Madrid • 13:05</span>
-        </div>
+      <div class="panel-title">History</div>
+      <div id="history-list">
+        <div class="empty-msg">No trades yet</div>
       </div>
     </div>
 
   </div>
 
 <script>
-// State
-let currentOutcome = 'home';
-let currentSide = 'back';
+const API = window.location.origin;  // same server
+let allEvents = [];
+let currentEvent = null;
+let currentOutcomes = [];
+let selectedOutcomeIdx = 0;
+let selectedSide = 'back';
+let refreshTimer = null;
 
-// Generate ladder for a given outcome
-function generateLadder(tbodyId, scrollId, currentPrice, myPos) {
-  const tbody = document.getElementById(tbodyId);
-  const maxVol = 8000;
+// ========== Search & Load ==========
+
+async function searchOrLoad() {
+  const input = document.getElementById('url-input').value.trim();
+  if (!input) return;
+
+  // If it looks like a URL, load it
+  if (input.includes('polymarket.com')) {
+    return loadFromUrl();
+  }
+
+  // Otherwise search
+  document.getElementById('events-list').innerHTML = '<div class="loading-msg">Searching...</div>';
+
+  try {
+    const resp = await fetch(`${API}/api/search?q=${encodeURIComponent(input)}&limit=50`);
+    allEvents = await resp.json();
+    renderEventsList(allEvents);
+  } catch (e) {
+    document.getElementById('events-list').innerHTML = `<div class="loading-msg">Error: ${e.message}</div>`;
+  }
+}
+
+async function loadFromUrl() {
+  const input = document.getElementById('url-input').value.trim();
+  if (!input) return;
+
+  // Extract slug from URL
+  const slugMatch = input.match(/polymarket\.com\/event\/([^/?#]+)/);
+  if (!slugMatch) {
+    alert('Invalid Polymarket URL. Expected format: https://polymarket.com/event/slug-here');
+    return;
+  }
+
+  const slug = slugMatch[1];
+  document.getElementById('event-header').querySelector('h2').textContent = 'Loading...';
+
+  try {
+    const resp = await fetch(`${API}/api/event/${slug}`);
+    const event = await resp.json();
+
+    if (event.error) {
+      alert('Event not found: ' + event.error);
+      return;
+    }
+
+    // Add to events list
+    allEvents = [event];
+    renderEventsList(allEvents);
+    selectEvent(event);
+  } catch (e) {
+    alert('Error loading event: ' + e.message);
+  }
+}
+
+// ========== Events List ==========
+
+function renderEventsList(events) {
+  const container = document.getElementById('events-list');
+  if (!events.length) {
+    container.innerHTML = '<div class="loading-msg">No events found</div>';
+    return;
+  }
+
+  container.innerHTML = events.map((ev, i) => {
+    const vol = ev.volume >= 1000000 ? `$${(ev.volume/1000000).toFixed(1)}M`
+              : ev.volume >= 1000 ? `$${(ev.volume/1000).toFixed(0)}K`
+              : `$${ev.volume.toFixed(0)}`;
+
+    const outcomes = (ev.outcomes || []).map(o => {
+      const price = Math.round(o.last_price * 100);
+      const label = o.outcome || o.question.substring(0, 20);
+      return `<span class="ev-out">${label} <span class="price">${price}¢</span></span>`;
+    }).join('');
+
+    return `<div class="event-item${currentEvent && currentEvent.slug === ev.slug ? ' active' : ''}"
+                 onclick="selectEvent(allEvents[${i}])">
+      <div class="ev-title">${ev.title}</div>
+      <div class="ev-meta">
+        <span class="ev-vol">Vol: ${vol}</span>
+        <span>${ev.num_outcomes || ev.outcomes.length} outcomes</span>
+      </div>
+      <div class="ev-outcomes">${outcomes}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterEvents() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = allEvents.filter(e => e.title.toLowerCase().includes(q));
+  renderEventsList(filtered);
+}
+
+// ========== Select Event ==========
+
+async function selectEvent(event) {
+  currentEvent = event;
+  currentOutcomes = event.outcomes || [];
+  selectedOutcomeIdx = 0;
+
+  // Update header
+  document.getElementById('event-title').textContent = event.title;
+
+  const vol = event.volume >= 1000000 ? `$${(event.volume/1000000).toFixed(1)}M`
+            : event.volume >= 1000 ? `$${(event.volume/1000).toFixed(0)}K`
+            : `$${(event.volume||0).toFixed(0)}`;
+  document.getElementById('event-meta').innerHTML =
+    `Outcomes: <span>${currentOutcomes.length}</span> | Volume: <span>${vol}</span> | End: <span>${event.end_date || 'N/A'}</span>`;
+
+  document.getElementById('status-event').textContent = event.title;
+
+  // Update outcome buttons in ticket
+  const ticketOut = document.getElementById('ticket-outcomes');
+  ticketOut.innerHTML = currentOutcomes.map((o, i) => {
+    const label = o.outcome || o.question.substring(0, 15);
+    return `<button class="out-btn${i === 0 ? ' active' : ''}" onclick="selectOutcome(${i})">${label}</button>`;
+  }).join('');
+
+  document.getElementById('order-ticket').style.display = currentOutcomes.length ? 'flex' : 'none';
+
+  // Build ladders
+  buildLadders();
+  await refreshBooks();
+
+  // Start auto-refresh
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(refreshBooks, 3000);
+
+  // Re-render events list to show active
+  renderEventsList(allEvents);
+}
+
+// ========== Ladders ==========
+
+function buildLadders() {
+  const container = document.getElementById('ladders-row');
+
+  if (!currentOutcomes.length) {
+    container.innerHTML = '<div class="no-data">No outcomes for this event</div>';
+    return;
+  }
+
+  container.innerHTML = currentOutcomes.map((o, i) => {
+    const label = o.outcome || o.question.substring(0, 25);
+    return `<div class="ladder-panel">
+      <div class="ladder-title">
+        ${label}
+        <span class="best-price" id="best-${i}">--¢</span>
+        <span class="best-spread" id="spread-${i}">spread: --</span>
+      </div>
+      <div class="ladder-scroll" id="scroll-${i}">
+        <table class="ladder-table">
+          <thead><tr>
+            <th class="back-h">BACK $</th>
+            <th class="price-h">¢</th>
+            <th class="lay-h">LAY $</th>
+          </tr></thead>
+          <tbody id="ladder-${i}"></tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function refreshBooks() {
+  if (!currentOutcomes.length) return;
+
+  // Collect all YES token IDs
+  const tokens = currentOutcomes.map(o => o.yes_token).filter(Boolean);
+  if (!tokens.length) return;
+
+  try {
+    const resp = await fetch(`${API}/api/books?tokens=${tokens.join(',')}`);
+    const books = await resp.json();
+
+    currentOutcomes.forEach((outcome, i) => {
+      if (!outcome.yes_token || !books[outcome.yes_token]) return;
+      const book = books[outcome.yes_token];
+      renderLadder(i, book);
+    });
+
+    document.getElementById('status-dot').textContent = '● API OK';
+    document.getElementById('status-dot').style.color = '#00ff88';
+  } catch (e) {
+    document.getElementById('status-dot').textContent = '● ERROR';
+    document.getElementById('status-dot').style.color = '#ff4444';
+  }
+}
+
+function renderLadder(idx, book) {
+  const tbody = document.getElementById(`ladder-${idx}`);
+  const scrollEl = document.getElementById(`scroll-${idx}`);
+  if (!tbody) return;
+
+  const bids = book.bids || {};  // {price_cents: size}
+  const asks = book.asks || {};
+  const bestBid = book.best_bid || 0;
+  const bestAsk = book.best_ask || 0;
+
+  // Find max volume for bar scaling
+  let maxVol = 1;
+  Object.values(bids).forEach(v => { if (v > maxVol) maxVol = v; });
+  Object.values(asks).forEach(v => { if (v > maxVol) maxVol = v; });
+
+  // Update header
+  const midpoint = bestBid && bestAsk ? Math.round((bestBid + bestAsk) / 2) : (bestBid || bestAsk);
+  document.getElementById(`best-${idx}`).textContent = `${midpoint}¢`;
+  const spread = bestAsk && bestBid ? bestAsk - bestBid : 0;
+  document.getElementById(`spread-${idx}`).textContent = `spread: ${spread}¢`;
+
+  const fmtVol = (v) => {
+    if (v >= 10000) return `$${(v/1000).toFixed(0)}K`;
+    if (v >= 1000) return `$${(v/1000).toFixed(1)}K`;
+    if (v > 0) return `$${Math.round(v)}`;
+    return '';
+  };
+
+  // Save scroll position
+  const prevScroll = scrollEl.scrollTop;
+  const wasAtDefault = prevScroll === 0;
 
   let html = '';
   for (let p = 99; p >= 1; p--) {
-    const dist = Math.abs(p - currentPrice);
-    const backVol = dist < 12 ? Math.floor(Math.max(0, (6000 - dist * 500)) + Math.random() * 2000) : 0;
-    const layVol = dist < 12 ? Math.floor(Math.max(0, (6000 - dist * 500)) + Math.random() * 2000) : 0;
+    const bidVol = bids[p] || 0;
+    const askVol = asks[p] || 0;
+    const bidBar = bidVol > 0 ? Math.min(100, bidVol / maxVol * 100) : 0;
+    const askBar = askVol > 0 ? Math.min(100, askVol / maxVol * 100) : 0;
 
-    const isCurrent = p === currentPrice;
-    const isMyPos = p === myPos;
-    const priceClass = isCurrent ? 'current' : (isMyPos ? 'my-pos' : '');
-
-    const fmtVol = (v) => v > 0 ? (v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`) : '';
-    const barW = (v) => Math.min(100, v / maxVol * 100);
+    let priceClass = 'price-cell';
+    if (p === bestBid) priceClass += ' best-bid';
+    else if (p === bestAsk) priceClass += ' best-ask';
 
     html += `<tr>
-      <td class="back-cell" onclick="clickLadder(${p},'back','${tbodyId.replace('-ladder','')}')">
-        ${backVol > 0 ? `<div class="bar" style="width:${barW(backVol)}%"></div>` : ''}
-        <span class="val">${fmtVol(backVol)}</span>
+      <td class="back-cell${bidVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'back')">
+        ${bidBar > 0 ? `<div class="bar" style="width:${bidBar}%"></div>` : ''}
+        <span class="val">${fmtVol(bidVol)}</span>
       </td>
-      <td class="price-cell ${priceClass}">${p}</td>
-      <td class="lay-cell" onclick="clickLadder(${p},'lay','${tbodyId.replace('-ladder','')}')">
-        ${layVol > 0 ? `<div class="bar" style="width:${barW(layVol)}%"></div>` : ''}
-        <span class="val">${fmtVol(layVol)}</span>
+      <td class="${priceClass}">${p}</td>
+      <td class="lay-cell${askVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'lay')">
+        ${askBar > 0 ? `<div class="bar" style="width:${askBar}%"></div>` : ''}
+        <span class="val">${fmtVol(askVol)}</span>
       </td>
     </tr>`;
   }
 
   tbody.innerHTML = html;
 
-  // Scroll to current price
-  setTimeout(() => {
-    const scroll = document.getElementById(scrollId);
+  // Scroll to midpoint on first render
+  if (wasAtDefault && midpoint > 0) {
     const rows = tbody.querySelectorAll('tr');
-    const targetRow = rows[99 - currentPrice];
-    if (targetRow && scroll) {
-      scroll.scrollTop = targetRow.offsetTop - scroll.clientHeight / 2;
+    const targetRow = rows[99 - midpoint];
+    if (targetRow) {
+      scrollEl.scrollTop = targetRow.offsetTop - scrollEl.clientHeight / 2;
     }
-  }, 50);
+  } else {
+    scrollEl.scrollTop = prevScroll;
+  }
 }
 
-function clickLadder(price, side, outcome) {
-  document.getElementById('order-price').value = price;
-  selectOutcome(outcome);
-  selectSide(side);
+// ========== Order Ticket ==========
+
+function clickLadder(outcomeIdx, price, side) {
+  selectedOutcomeIdx = outcomeIdx;
+  selectedSide = side;
+  document.getElementById('ord-price').value = price;
+
+  // Update outcome buttons
+  document.querySelectorAll('.ticket-out .out-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === outcomeIdx);
+  });
+  setSide(side);
   updateTicket();
 }
 
-function selectOutcome(outcome) {
-  currentOutcome = outcome;
-  document.getElementById('sel-home').className = 'sel-btn' + (outcome === 'home' ? ' active-home' : '');
-  document.getElementById('sel-draw').className = 'sel-btn' + (outcome === 'draw' ? ' active-draw' : '');
-  document.getElementById('sel-away').className = 'sel-btn' + (outcome === 'away' ? ' active-away' : '');
+function selectOutcome(idx) {
+  selectedOutcomeIdx = idx;
+  document.querySelectorAll('.ticket-out .out-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
 }
 
-function selectSide(side) {
-  currentSide = side;
-  document.getElementById('side-back').className = 'side-btn back' + (side === 'back' ? ' active' : '');
-  document.getElementById('side-lay').className = 'side-btn lay' + (side === 'lay' ? ' active' : '');
-}
-
-function setStake(amount) {
-  const price = parseInt(document.getElementById('order-price').value) || 50;
-  const qty = Math.floor(amount / (price / 100));
-  document.getElementById('order-qty').value = qty;
-  updateTicket();
+function setSide(side) {
+  selectedSide = side;
+  document.getElementById('side-back').classList.toggle('active', side === 'back');
+  document.getElementById('side-lay').classList.toggle('active', side === 'lay');
 }
 
 function updateTicket() {
-  const price = parseInt(document.getElementById('order-price').value) || 50;
-  const qty = parseInt(document.getElementById('order-qty').value) || 1;
-  const cost = (price / 100 * qty).toFixed(2);
-  const profit = (qty - parseFloat(cost)).toFixed(2);
-  document.getElementById('order-cost').value = `$${cost}`;
-  document.getElementById('ticket-payout').textContent = `Payout $${qty.toFixed(2)} | Profit $${profit}`;
+  const price = parseInt(document.getElementById('ord-price').value) || 50;
+  const size = parseFloat(document.getElementById('ord-size').value) || 10;
+  const contracts = Math.floor(size / (price / 100));
+  const cost = (price / 100 * contracts).toFixed(2);
+  const profit = (contracts - parseFloat(cost)).toFixed(2);
+  document.getElementById('t-payout').textContent =
+    `${contracts} contracts | Cost: $${cost} | Profit: $${profit}`;
 }
 
-function selectMatch(el, idx) {
-  document.querySelectorAll('.match-item').forEach(m => m.classList.remove('active'));
-  el.classList.add('active');
-  const teams = el.querySelector('.match-teams').textContent;
-  document.getElementById('header-teams').textContent = teams;
+async function placeOrder() {
+  if (!currentOutcomes[selectedOutcomeIdx]) {
+    alert('Select an outcome first');
+    return;
+  }
+
+  const outcome = currentOutcomes[selectedOutcomeIdx];
+  const price = parseInt(document.getElementById('ord-price').value);
+  const size = parseFloat(document.getElementById('ord-size').value);
+  const tokenId = selectedSide === 'back' ? outcome.yes_token : outcome.no_token;
+  const apiSide = selectedSide === 'back' ? 'BUY' : 'SELL';
+
+  const label = outcome.outcome || outcome.question.substring(0, 20);
+  if (!confirm(`${selectedSide.toUpperCase()} ${label}\n${size} contracts @ ${price}¢\nToken: ${tokenId?.substring(0, 20)}...\n\nConfirm?`)) {
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${API}/api/order`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        token_id: tokenId,
+        price: price,
+        size: size,
+        side: apiSide,
+      }),
+    });
+    const result = await resp.json();
+    if (result.error) {
+      alert('Order failed: ' + result.error);
+    } else {
+      alert('Order placed!');
+      loadOrders();
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
 }
 
-function loadMarket() {
-  const url = document.getElementById('market-url').value;
-  if (!url) return;
-  alert('Loading market: ' + url + '\n\n(Polymarket API integration coming soon)');
+// ========== Orders & Positions ==========
+
+async function loadOrders() {
+  try {
+    const resp = await fetch(`${API}/api/orders`);
+    const orders = await resp.json();
+    const container = document.getElementById('orders-list');
+
+    if (!orders.length) {
+      container.innerHTML = '<div class="empty-msg">No pending orders</div>';
+      return;
+    }
+
+    container.innerHTML = orders.map(o => `
+      <div class="ord-item">
+        <div>
+          <span class="${o.side === 'BUY' ? 'pos-back' : 'pos-lay'}">${o.side}</span>
+          ${o.size} @ ${Math.round(o.price * 100)}¢
+        </div>
+        <button class="cancel-btn" onclick="cancelOrder('${o.id}')">CANCEL</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    // Silent fail - trade client might not be available
+  }
 }
 
-function submitOrder() {
-  const price = document.getElementById('order-price').value;
-  const qty = document.getElementById('order-qty').value;
-  const outcome = currentOutcome.toUpperCase();
-  const side = currentSide.toUpperCase();
-  alert(`Order placed!\n${side} ${outcome} ${qty} contracts @ ${price}¢\n\n(Polymarket API integration coming soon)`);
+async function cancelOrder(orderId) {
+  if (!confirm('Cancel this order?')) return;
+  try {
+    await fetch(`${API}/api/cancel`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({order_id: orderId}),
+    });
+    loadOrders();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
 }
 
-// Initialize all 3 ladders
-generateLadder('home-ladder', 'home-scroll', 52, 48);
-generateLadder('draw-ladder', 'draw-scroll', 28, null);
-generateLadder('away-ladder', 'away-scroll', 20, null);
+// ========== Init ==========
+
+// Enter key to search
+document.getElementById('url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchOrLoad();
+});
+
 updateTicket();
+
+// Try loading orders on startup
+loadOrders();
 </script>
 
 </body>
