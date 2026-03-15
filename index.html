@@ -502,7 +502,7 @@ function renderEventsList(events) {
       <div class="ev-title">${ev.title}</div>
       <div class="ev-meta">
         <span class="ev-vol">Vol: ${vol}</span>
-        <span>${ev.num_outcomes || ev.outcomes.length} outcomes</span>
+        <span>${ev.num_outcomes || (ev.outcomes || []).length} outcomes</span>
       </div>
       <div class="ev-outcomes">${outcomes}</div>
     </div>`;
@@ -518,12 +518,20 @@ function filterEvents() {
 // ========== Select Event ==========
 
 async function selectEvent(event) {
+  // If event came from search (has slug but might have incomplete data), reload via API
+  if (event.slug && (!event.outcomes || !event.outcomes.length)) {
+    try {
+      const resp = await fetch(`${API}/api/event/${event.slug}`);
+      const full = await resp.json();
+      if (!full.error) event = full;
+    } catch (e) {}
+  }
+
   currentEvent = event;
   currentOutcomes = event.outcomes || [];
-  selectedOutcomeIdx = 0;
 
   // Update header
-  document.getElementById('event-title').textContent = event.title;
+  document.getElementById('event-title').textContent = event.title || '';
 
   const evVol = event.volume || 0;
   const vol = evVol >= 1000000 ? `$${(evVol/1000000).toFixed(1)}M`
@@ -532,9 +540,7 @@ async function selectEvent(event) {
   document.getElementById('event-meta').innerHTML =
     `Outcomes: <span>${currentOutcomes.length}</span> | Volume: <span>${vol}</span> | End: <span>${event.end_date || 'N/A'}</span>`;
 
-  document.getElementById('status-event').textContent = event.title;
-
-  // No ticket needed - one-click trading via ladder
+  document.getElementById('status-event').textContent = event.title || '';
 
   // Build ladders
   buildLadders();
