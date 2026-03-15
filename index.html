@@ -540,7 +540,8 @@ async function selectEvent(event) {
   document.getElementById('event-meta').innerHTML =
     `Outcomes: <span>${currentOutcomes.length}</span> | Volume: <span>${vol}</span> | End: <span>${event.end_date || 'N/A'}</span>`;
 
-  document.getElementById('status-event').textContent = event.title || '';
+  const statusEl = document.getElementById('status-event');
+  if (statusEl) statusEl.textContent = event.title || '';
 
   // Build ladders
   buildLadders();
