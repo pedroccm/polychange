@@ -458,14 +458,20 @@ async function loadFromUrl() {
   const input = document.getElementById('url-input').value.trim();
   if (!input) return;
 
-  // Extract slug from URL
-  const slugMatch = input.match(/polymarket\.com\/event\/([^/?#]+)/);
-  if (!slugMatch) {
-    alert('Invalid Polymarket URL. Expected format: https://polymarket.com/event/slug-here');
+  // Extract slug from URL - supports /event/slug, /pt/sports/.../slug, /sports/.../slug etc.
+  let slug = null;
+  const patterns = [
+    /polymarket\.com\/(?:[a-z]{2}\/)?event\/([^/?#]+)/,
+    /polymarket\.com\/(?:[a-z]{2}\/)?sports\/[^/]+\/([^/?#]+)/,
+  ];
+  for (const pat of patterns) {
+    const m = input.match(pat);
+    if (m) { slug = m[1]; break; }
+  }
+  if (!slug) {
+    alert('Invalid Polymarket URL');
     return;
   }
-
-  const slug = slugMatch[1];
   document.getElementById('event-header').querySelector('h2').textContent = 'Loading...';
 
   try {

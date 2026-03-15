@@ -121,19 +121,52 @@ def search_events():
 
 @app.route('/api/event/<slug>')
 def get_event(slug):
-    """Busca evento por slug. Ex: /api/event/premier-league-arsenal-chelsea"""
+    """Busca evento por slug. Tenta Gamma API primeiro, depois scraping."""
+    import re
+
+    # Try Gamma API first
     resp = requests.get(f'{GAMMA_URL}/events', params={
         'slug': slug, 'limit': 1
     }, headers=HEADERS, timeout=10)
 
-    if resp.status_code != 200:
-        return jsonify({'error': 'Event not found'}), 404
+    events = resp.json() if resp.status_code == 200 else []
 
-    events = resp.json()
-    if not events:
-        return jsonify({'error': 'Event not found'}), 404
+    if events:
+        ev = events[0]
+    else:
+        # Fallback: scrape Polymarket page directly
+        ev = None
+        for url_fmt in [
+            f'https://polymarket.com/event/{slug}',
+            f'https://polymarket.com/sports/sea/{slug}',  # Serie A etc.
+        ]:
+            try:
+                page = requests.get(url_fmt, headers=HEADERS, timeout=15)
+                if page.status_code != 200:
+                    continue
+                next_data = re.search(r'<script id="__NEXT_DATA__"[^>]*>([^<]+)</script>', page.text)
+                if not next_data:
+                    continue
+                data = json.loads(next_data.group(1))
+                queries = data.get('props', {}).get('pageProps', {}).get('dehydratedState', {}).get('queries', [])
+                for q in queries:
+                    data_q = q.get('state', {}).get('data')
+                    if isinstance(data_q, dict) and 'markets' in data_q:
+                        ev = {
+                            'title': data_q.get('title', slug),
+                            'slug': slug,
+                            'endDate': data_q.get('endDate', ''),
+                            'markets': data_q.get('markets', []),
+                        }
+                        break
+                if ev:
+                    break
+            except:
+                continue
 
-    ev = events[0]
+        if not ev:
+            return jsonify({'error': 'Event not found'}), 404
+
     markets = ev.get('markets', [])
     outcomes = []
 
