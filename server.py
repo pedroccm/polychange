@@ -371,40 +371,44 @@ def get_trades():
 
 @app.route('/api/balance')
 def get_balance():
-    """Retorna saldo USDC da wallet na Polygon."""
+    """Retorna saldo: positions via data API + USDC on-chain."""
+    wallet = os.getenv('POLY_FUNDER', '')
+    if not wallet:
+        from eth_account import Account
+        wallet = Account.from_key(os.getenv('POLY_PRIVATE_KEY')).address
+
+    result = {'wallet': wallet, 'usdc': 0, 'positions_value': 0, 'total': 0}
+
     try:
-        wallet = os.getenv('POLY_FUNDER', '')
-        if not wallet:
-            from eth_account import Account
-            acct = Account.from_key(os.getenv('POLY_PRIVATE_KEY'))
-            wallet = acct.address
+        # Positions value via Polymarket data API
+        resp = requests.get('https://data-api.polymarket.com/positions', params={
+            'user': wallet.lower(), 'sizeThreshold': 0, 'limit': 100,
+        }, timeout=10)
+        if resp.status_code == 200:
+            positions = resp.json()
+            if isinstance(positions, list):
+                result['positions_value'] = round(sum(
+                    float(p.get('currentValue', 0) or 0) for p in positions
+                ), 2)
+    except:
+        pass
 
-        # USDC on Polygon (PoS bridged)
-        USDC_POS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
-        # USDC native
-        USDC_NATIVE = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'
-
-        def get_erc20_balance(contract):
+    try:
+        # USDC on-chain (both types)
+        for contract in ['0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+                         '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359']:
             data = '0x70a08231' + wallet[2:].lower().zfill(64)
             resp = requests.post('https://polygon-rpc.com', json={
                 'jsonrpc': '2.0', 'method': 'eth_call',
-                'params': [{'to': contract, 'data': data}, 'latest'],
-                'id': 1
+                'params': [{'to': contract, 'data': data}, 'latest'], 'id': 1
             }, timeout=10)
-            result = resp.json().get('result', '0x0')
-            return int(result, 16) / 1e6
+            bal = int(resp.json().get('result', '0x0'), 16) / 1e6
+            result['usdc'] = round(result['usdc'] + bal, 2)
+    except:
+        pass
 
-        usdc = get_erc20_balance(USDC_POS)
-        usdc_e = get_erc20_balance(USDC_NATIVE)
-
-        return jsonify({
-            'wallet': wallet,
-            'usdc': round(usdc, 2),
-            'usdc_native': round(usdc_e, 2),
-            'total': round(usdc + usdc_e, 2),
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result['total'] = round(result['usdc'] + result['positions_value'], 2)
+    return jsonify(result)
 
 
 if __name__ == '__main__':
