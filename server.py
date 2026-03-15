@@ -410,6 +410,44 @@ def get_balance():
     return jsonify(result)
 
 
+# ========== Health Check ==========
+
+@app.route('/api/health')
+def health():
+    """Pinga cada API e retorna status."""
+    status = {}
+
+    # CLOB API
+    try:
+        r = requests.get(f'{CLOB_URL}/time', timeout=3)
+        status['clob'] = r.status_code == 200
+    except:
+        status['clob'] = False
+
+    # Gamma API
+    try:
+        r = requests.get(f'{GAMMA_URL}/events?limit=1', timeout=3)
+        status['gamma'] = r.status_code == 200
+    except:
+        status['gamma'] = False
+
+    # Data API
+    try:
+        r = requests.get('https://data-api.polymarket.com/positions?user=0x0&limit=1', timeout=3)
+        status['data'] = r.status_code == 200
+    except:
+        status['data'] = False
+
+    # Trade client
+    try:
+        client = get_trade_client()
+        status['trade'] = client is not None
+    except:
+        status['trade'] = False
+
+    return jsonify(status)
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("  POLYCHANGE SERVER")
