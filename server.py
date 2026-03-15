@@ -191,6 +191,8 @@ def get_event(slug):
         'title': ev.get('title', ''),
         'slug': ev.get('slug', ''),
         'end_date': ev.get('endDate', ''),
+        'volume': sum(o['volume'] for o in outcomes),
+        'num_outcomes': len(outcomes),
         'outcomes': outcomes,
     })
 
