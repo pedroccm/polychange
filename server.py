@@ -369,6 +369,89 @@ def get_trades():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/positions')
+def get_positions():
+    """Calcula posicoes abertas a partir dos trades do CLOB."""
+    client = get_trade_client()
+    if not client:
+        return jsonify({'error': 'Trade client not available'}), 500
+
+    try:
+        trades = client.get_trades()
+        if not trades:
+            return jsonify([])
+
+        # Aggregate by asset_id: BUY adds, SELL subtracts
+        positions = {}  # asset_id -> {size, avg_price, cost, side_counts}
+        for t in trades:
+            asset = t.get('asset_id', '')
+            if not asset:
+                continue
+            side = t.get('side', '').upper()
+            size = float(t.get('size', 0))
+            price = float(t.get('price', 0))
+            market = t.get('market', '')
+
+            if asset not in positions:
+                positions[asset] = {
+                    'asset_id': asset,
+                    'market': market,
+                    'size': 0,
+                    'cost': 0,
+                    'buys': 0,
+                    'sells': 0,
+                }
+
+            if side == 'BUY':
+                positions[asset]['size'] += size
+                positions[asset]['cost'] += size * price
+                positions[asset]['buys'] += size
+            elif side == 'SELL':
+                positions[asset]['size'] -= size
+                positions[asset]['cost'] -= size * price
+                positions[asset]['sells'] += size
+
+        # Filter out closed positions (size ~0) and enrich with current price
+        result = []
+        for asset, pos in positions.items():
+            if abs(pos['size']) < 0.01:
+                continue
+
+            avg_price = pos['cost'] / pos['size'] if pos['size'] != 0 else 0
+
+            # Get current price
+            current_price = 0
+            try:
+                r = requests.get(f'{CLOB_URL}/price', params={
+                    'token_id': asset, 'side': 'SELL'  # what we could sell for
+                }, timeout=3)
+                if r.status_code == 200:
+                    current_price = float(r.json().get('price', 0))
+            except:
+                pass
+
+            current_value = pos['size'] * current_price
+            pnl = current_value - pos['cost']
+
+            result.append({
+                'asset_id': asset,
+                'market': pos['market'],
+                'size': round(pos['size'], 2),
+                'avg_price': round(avg_price * 100, 1),
+                'cost': round(pos['cost'], 2),
+                'current_price': round(current_price * 100, 1),
+                'current_value': round(current_value, 2),
+                'pnl': round(pnl, 2),
+            })
+
+        # Sort by absolute size
+        result.sort(key=lambda x: abs(x['size']), reverse=True)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ========== Balance ==========
 
 @app.route('/api/balance')

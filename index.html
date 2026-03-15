@@ -779,6 +779,36 @@ async function cancelOrder(orderId) {
   }
 }
 
+async function loadPositions() {
+  try {
+    const resp = await fetch(`${API}/api/positions`);
+    const positions = await resp.json();
+    const container = document.getElementById('positions-list');
+
+    if (!positions.length || positions.error) {
+      container.innerHTML = '<div class="empty-msg">No positions</div>';
+      return;
+    }
+
+    container.innerHTML = positions.map(p => {
+      const pnlClass = p.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+      const pnlSign = p.pnl >= 0 ? '+' : '';
+      const assetShort = p.asset_id.substring(0, 12) + '...';
+      return `<div class="pos-item">
+        <div class="pos-mkt" title="${p.asset_id}">${assetShort}</div>
+        <div class="pos-row">
+          <div><span class="pos-back">${p.size}</span> @ ${p.avg_price}¢</div>
+          <div class="${pnlClass}">${pnlSign}$${p.pnl.toFixed(2)}</div>
+        </div>
+        <div class="pos-row">
+          <span style="color:#555">Cost: $${p.cost.toFixed(2)}</span>
+          <span style="color:#555">Now: ${p.current_price}¢ ($${p.current_value.toFixed(2)})</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {}
+}
+
 // ========== Init ==========
 
 // Enter key to search
@@ -802,10 +832,11 @@ async function loadBalance() {
 
 loadBalance();
 loadOrders();
+loadPositions();
 checkHealth();
 
 // Auto-refresh
-setInterval(() => { loadBalance(); loadOrders(); }, 10000);
+setInterval(() => { loadBalance(); loadOrders(); loadPositions(); }, 10000);
 setInterval(checkHealth, 5000);
 
 async function checkHealth() {
