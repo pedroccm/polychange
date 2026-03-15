@@ -782,20 +782,42 @@ async function cancelOrder(orderId) {
 async function loadPositions() {
   try {
     const resp = await fetch(`${API}/api/positions`);
-    const positions = await resp.json();
+    const allPositions = await resp.json();
     const container = document.getElementById('positions-list');
 
-    if (!positions.length || positions.error) {
+    if (!allPositions.length || allPositions.error) {
       container.innerHTML = '<div class="empty-msg">No positions</div>';
       return;
     }
 
-    container.innerHTML = positions.map(p => {
+    // Get token IDs of current event outcomes
+    const eventTokens = new Set();
+    if (currentOutcomes.length) {
+      currentOutcomes.forEach(o => {
+        if (o.yes_token) eventTokens.add(o.yes_token);
+        if (o.no_token) eventTokens.add(o.no_token);
+      });
+    }
+
+    // Split: this event vs other
+    const eventPositions = allPositions.filter(p => eventTokens.has(p.asset_id));
+    const otherPositions = allPositions.filter(p => !eventTokens.has(p.asset_id));
+
+    // Find outcome label for token
+    const tokenLabel = (assetId) => {
+      for (const o of currentOutcomes) {
+        if (o.yes_token === assetId) return (o.outcome || o.question || '').substring(0, 20) + ' YES';
+        if (o.no_token === assetId) return (o.outcome || o.question || '').substring(0, 20) + ' NO';
+      }
+      return assetId.substring(0, 12) + '...';
+    };
+
+    const renderPos = (p) => {
       const pnlClass = p.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
       const pnlSign = p.pnl >= 0 ? '+' : '';
-      const assetShort = p.asset_id.substring(0, 12) + '...';
+      const label = tokenLabel(p.asset_id);
       return `<div class="pos-item">
-        <div class="pos-mkt" title="${p.asset_id}">${assetShort}</div>
+        <div class="pos-mkt" title="${p.asset_id}">${label}</div>
         <div class="pos-row">
           <div><span class="pos-back">${p.size}</span> @ ${p.avg_price}¢</div>
           <div class="${pnlClass}">${pnlSign}$${p.pnl.toFixed(2)}</div>
@@ -805,7 +827,20 @@ async function loadPositions() {
           <span style="color:#555">Now: ${p.current_price}¢ ($${p.current_value.toFixed(2)})</span>
         </div>
       </div>`;
-    }).join('');
+    };
+
+    let html = '';
+    if (eventPositions.length) {
+      html += eventPositions.map(renderPos).join('');
+    }
+    if (otherPositions.length) {
+      html += `<div class="panel-title" style="margin-top:4px;">Other Positions (${otherPositions.length})</div>`;
+      html += otherPositions.map(renderPos).join('');
+    }
+    if (!html) {
+      html = '<div class="empty-msg">No positions</div>';
+    }
+    container.innerHTML = html;
   } catch (e) {}
 }
 
