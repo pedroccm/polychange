@@ -672,14 +672,14 @@ function renderLadder(idx, book) {
     else if (p === bestAsk) priceClass += ' best-ask';
 
     html += `<tr>
-      <td class="back-cell${bidVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'back')">
-        ${bidBar > 0 ? `<div class="bar" style="width:${bidBar}%"></div>` : ''}
-        <span class="val">${fmtVol(bidVol)}</span>
-      </td>
-      <td class="${priceClass}">${p}</td>
-      <td class="lay-cell${askVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'lay')">
+      <td class="back-cell${askVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'back')">
         ${askBar > 0 ? `<div class="bar" style="width:${askBar}%"></div>` : ''}
         <span class="val">${fmtVol(askVol)}</span>
+      </td>
+      <td class="${priceClass}">${p}</td>
+      <td class="lay-cell${bidVol > 0 ? ' has-vol' : ''}" onclick="clickLadder(${idx},${p},'lay')">
+        ${bidBar > 0 ? `<div class="bar" style="width:${bidBar}%"></div>` : ''}
+        <span class="val">${fmtVol(bidVol)}</span>
       </td>
     </tr>`;
   }
