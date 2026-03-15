@@ -373,16 +373,27 @@ def get_trades():
 
 @app.route('/api/balance')
 def get_balance():
-    """Retorna saldo: positions via data API + USDC on-chain."""
+    """Retorna saldo real via CLOB API."""
     wallet = os.getenv('POLY_FUNDER', '')
-    if not wallet:
-        from eth_account import Account
-        wallet = Account.from_key(os.getenv('POLY_PRIVATE_KEY')).address
+    result = {'wallet': wallet, 'cash': 0, 'positions_value': 0, 'total': 0}
 
-    result = {'wallet': wallet, 'usdc': 0, 'positions_value': 0, 'total': 0}
-
+    # Cash balance via CLOB API (the real balance inside Polymarket)
     try:
-        # Positions value via Polymarket data API
+        client = get_trade_client()
+        if client:
+            from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+            params = BalanceAllowanceParams(
+                asset_type=AssetType.COLLATERAL,
+                signature_type=1,
+            )
+            bal = client.get_balance_allowance(params)
+            raw = int(bal.get('balance', '0'))
+            result['cash'] = round(raw / 1e6, 2)
+    except:
+        pass
+
+    # Positions value via data API
+    try:
         resp = requests.get('https://data-api.polymarket.com/positions', params={
             'user': wallet.lower(), 'sizeThreshold': 0, 'limit': 100,
         }, timeout=10)
@@ -395,21 +406,7 @@ def get_balance():
     except:
         pass
 
-    try:
-        # USDC on-chain (both types)
-        for contract in ['0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-                         '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359']:
-            data = '0x70a08231' + wallet[2:].lower().zfill(64)
-            resp = requests.post('https://polygon-rpc.com', json={
-                'jsonrpc': '2.0', 'method': 'eth_call',
-                'params': [{'to': contract, 'data': data}, 'latest'], 'id': 1
-            }, timeout=10)
-            bal = int(resp.json().get('result', '0x0'), 16) / 1e6
-            result['usdc'] = round(result['usdc'] + bal, 2)
-    except:
-        pass
-
-    result['total'] = round(result['usdc'] + result['positions_value'], 2)
+    result['total'] = round(result['cash'] + result['positions_value'], 2)
     return jsonify(result)
 
 

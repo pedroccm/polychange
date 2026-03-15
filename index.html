@@ -832,11 +832,9 @@ async function loadBalance() {
     const resp = await fetch(`${API}/api/balance`);
     const data = await resp.json();
     if (!data.error) {
-      const parts = [];
-      if (data.usdc > 0) parts.push(`USDC: $${data.usdc.toFixed(2)}`);
-      if (data.positions_value > 0) parts.push(`Positions: $${data.positions_value.toFixed(2)}`);
-      const detail = parts.length ? ` (${parts.join(' + ')})` : '';
-      document.getElementById('balance-val').textContent = `$${data.total.toFixed(2)}${detail}`;
+      const cash = (data.cash || 0).toFixed(2);
+      const pos = (data.positions_value || 0).toFixed(2);
+      document.getElementById('balance-val').textContent = `$${(data.total||0).toFixed(2)} (Cash: $${cash} | Pos: $${pos})`;
       document.getElementById('wallet-addr').textContent = data.wallet.substring(0, 6) + '...' + data.wallet.slice(-4);
     }
   } catch (e) {}
