@@ -321,6 +321,44 @@ def get_trades():
         return jsonify({'error': str(e)}), 500
 
 
+# ========== Balance ==========
+
+@app.route('/api/balance')
+def get_balance():
+    """Retorna saldo USDC da wallet na Polygon."""
+    try:
+        from eth_account import Account
+        acct = Account.from_key(os.getenv('POLY_PRIVATE_KEY'))
+        wallet = acct.address
+
+        # USDC on Polygon (PoS bridged)
+        USDC_POS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
+        # USDC native
+        USDC_NATIVE = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'
+
+        def get_erc20_balance(contract):
+            data = '0x70a08231' + wallet[2:].lower().zfill(64)
+            resp = requests.post('https://polygon-rpc.com', json={
+                'jsonrpc': '2.0', 'method': 'eth_call',
+                'params': [{'to': contract, 'data': data}, 'latest'],
+                'id': 1
+            }, timeout=10)
+            result = resp.json().get('result', '0x0')
+            return int(result, 16) / 1e6
+
+        usdc = get_erc20_balance(USDC_POS)
+        usdc_e = get_erc20_balance(USDC_NATIVE)
+
+        return jsonify({
+            'wallet': wallet,
+            'usdc': round(usdc, 2),
+            'usdc_native': round(usdc_e, 2),
+            'total': round(usdc + usdc_e, 2),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("  POLYCHANGE SERVER")
