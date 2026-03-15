@@ -28,17 +28,30 @@ def get_trade_client():
     if _trade_client is None:
         try:
             from py_clob_client.client import ClobClient
-            from py_clob_client.clob_types import ApiCreds
+            private_key = os.getenv('POLY_PRIVATE_KEY')
+            funder = os.getenv('POLY_FUNDER')
+            chain_id = int(os.getenv('POLY_CHAIN_ID', 137))
+
+            # Step 1: Create client with Magic wallet signature
+            client = ClobClient(
+                host=CLOB_URL,
+                chain_id=chain_id,
+                key=private_key,
+                signature_type=1,  # Magic wallet
+                funder=funder,
+            )
+            # Step 2: Derive API creds automatically
+            creds = client.create_or_derive_api_creds()
+            # Step 3: Recreate with creds
             _trade_client = ClobClient(
                 host=CLOB_URL,
-                key=os.getenv('POLY_PRIVATE_KEY'),
-                chain_id=int(os.getenv('POLY_CHAIN_ID', 137)),
-                creds=ApiCreds(
-                    api_key=os.getenv('POLY_API_KEY'),
-                    api_secret=os.getenv('POLY_API_SECRET'),
-                    api_passphrase=os.getenv('POLY_API_PASSPHRASE'),
-                ),
+                chain_id=chain_id,
+                key=private_key,
+                signature_type=1,
+                funder=funder,
+                creds=creds,
             )
+            print(f"Trade client OK! Funder: {funder}")
         except Exception as e:
             print(f"Trade client init failed: {e}")
     return _trade_client
@@ -248,7 +261,7 @@ def place_order():
         return jsonify({'error': 'token_id, price, size required'}), 400
 
     try:
-        from py_clob_client.clob_types import OrderArgs
+        from py_clob_client.clob_types import OrderArgs, OrderType
         from py_clob_client.order_builder.constants import BUY as BUY_SIDE, SELL as SELL_SIDE
 
         order_args = OrderArgs(
@@ -256,9 +269,9 @@ def place_order():
             price=price / 100,
             size=size,
             side=BUY_SIDE if side == 'BUY' else SELL_SIDE,
-            fee_rate_bps=0,
         )
-        result = client.create_and_post_order(order_args)
+        signed = client.create_order(order_args)
+        result = client.post_order(signed, OrderType.GTC)
         return jsonify({'success': True, 'result': str(result)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -327,9 +340,11 @@ def get_trades():
 def get_balance():
     """Retorna saldo USDC da wallet na Polygon."""
     try:
-        from eth_account import Account
-        acct = Account.from_key(os.getenv('POLY_PRIVATE_KEY'))
-        wallet = acct.address
+        wallet = os.getenv('POLY_FUNDER', '')
+        if not wallet:
+            from eth_account import Account
+            acct = Account.from_key(os.getenv('POLY_PRIVATE_KEY'))
+            wallet = acct.address
 
         # USDC on Polygon (PoS bridged)
         USDC_POS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
