@@ -349,7 +349,15 @@
     <span class="connected" id="status-dot">● API OK</span>
     <span>Balance: <strong id="balance-val" style="color:#00ff88">--</strong></span>
     <span>Wallet: <span id="wallet-addr" style="color:#888">--</span></span>
-    <span id="status-event">No event loaded</span>
+    <span style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+      <label style="color:#888; font-size:11px;">STAKE $</label>
+      <input type="number" id="stake-input" value="10" min="1" style="background:#0a0a1a; border:1px solid #0f3460; color:#00d4ff; padding:3px 6px; border-radius:3px; width:60px; text-align:center; font-size:13px; font-weight:bold;" />
+      <button onclick="document.getElementById('stake-input').value=2" style="background:#1a1a3e;color:#888;border:1px solid #2a2a4e;padding:2px 6px;border-radius:2px;font-size:10px;cursor:pointer;">$2</button>
+      <button onclick="document.getElementById('stake-input').value=5" style="background:#1a1a3e;color:#888;border:1px solid #2a2a4e;padding:2px 6px;border-radius:2px;font-size:10px;cursor:pointer;">$5</button>
+      <button onclick="document.getElementById('stake-input').value=10" style="background:#1a1a3e;color:#888;border:1px solid #2a2a4e;padding:2px 6px;border-radius:2px;font-size:10px;cursor:pointer;">$10</button>
+      <button onclick="document.getElementById('stake-input').value=25" style="background:#1a1a3e;color:#888;border:1px solid #2a2a4e;padding:2px 6px;border-radius:2px;font-size:10px;cursor:pointer;">$25</button>
+      <button onclick="document.getElementById('stake-input').value=50" style="background:#1a1a3e;color:#888;border:1px solid #2a2a4e;padding:2px 6px;border-radius:2px;font-size:10px;cursor:pointer;">$50</button>
+    </span>
     <span class="refresh-info" id="refresh-info">Auto-refresh: 3s</span>
   </div>
 
@@ -378,30 +386,8 @@
       </div>
 
       <!-- ORDER TICKET -->
-      <div class="order-ticket" id="order-ticket" style="display:none;">
-        <div class="ticket-out" id="ticket-outcomes"></div>
-        <div class="ticket-side">
-          <button class="s-btn back active" id="side-back" onclick="setSide('back')">BACK</button>
-          <button class="s-btn lay" id="side-lay" onclick="setSide('lay')">LAY</button>
-        </div>
-        <div class="t-field">
-          <label>Price ¢</label>
-          <input type="number" id="ord-price" value="50" min="1" max="99" oninput="updateTicket()" />
-        </div>
-        <div class="t-field">
-          <label>Size $</label>
-          <input type="number" id="ord-size" value="10" min="1" oninput="updateTicket()" />
-        </div>
-        <div class="quick-stakes">
-          <button onclick="document.getElementById('ord-size').value=5;updateTicket()">$5</button>
-          <button onclick="document.getElementById('ord-size').value=10;updateTicket()">$10</button>
-          <button onclick="document.getElementById('ord-size').value=25;updateTicket()">$25</button>
-          <button onclick="document.getElementById('ord-size').value=50;updateTicket()">$50</button>
-          <button onclick="document.getElementById('ord-size').value=100;updateTicket()">$100</button>
-        </div>
-        <button class="submit-btn" onclick="placeOrder()">PLACE ORDER</button>
-        <div class="t-payout" id="t-payout"></div>
-      </div>
+      <!-- Order status toast -->
+      <div id="order-toast" style="display:none; background:#16213e; border-top:2px solid #0f3460; padding:8px 16px; text-align:center; font-size:12px;"></div>
     </div>
 
     <!-- RIGHT: POSITIONS -->
@@ -427,8 +413,6 @@ const API = window.location.origin;  // same server
 let allEvents = [];
 let currentEvent = null;
 let currentOutcomes = [];
-let selectedOutcomeIdx = 0;
-let selectedSide = 'back';
 let refreshTimer = null;
 
 // ========== Search & Load ==========
@@ -550,14 +534,7 @@ async function selectEvent(event) {
 
   document.getElementById('status-event').textContent = event.title;
 
-  // Update outcome buttons in ticket
-  const ticketOut = document.getElementById('ticket-outcomes');
-  ticketOut.innerHTML = currentOutcomes.map((o, i) => {
-    const label = o.outcome || o.question.substring(0, 15);
-    return `<button class="out-btn${i === 0 ? ' active' : ''}" onclick="selectOutcome(${i})">${label}</button>`;
-  }).join('');
-
-  document.getElementById('order-ticket').style.display = currentOutcomes.length ? 'flex' : 'none';
+  // No ticket needed - one-click trading via ladder
 
   // Build ladders
   buildLadders();
@@ -700,58 +677,25 @@ function renderLadder(idx, book) {
 
 // ========== Order Ticket ==========
 
-function clickLadder(outcomeIdx, price, side) {
-  selectedOutcomeIdx = outcomeIdx;
-  selectedSide = side;
-  document.getElementById('ord-price').value = price;
+// ONE-CLICK TRADING: click ladder cell → instant order
+async function clickLadder(outcomeIdx, price, side) {
+  const outcome = currentOutcomes[outcomeIdx];
+  if (!outcome) return;
 
-  // Update outcome buttons
-  document.querySelectorAll('.ticket-out .out-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === outcomeIdx);
-  });
-  setSide(side);
-  updateTicket();
-}
+  const stake = parseFloat(document.getElementById('stake-input').value) || 10;
+  const tokenId = outcome.yes_token;
+  const apiSide = side === 'back' ? 'BUY' : 'SELL';
+  const label = outcome.outcome || (outcome.question || '').substring(0, 25);
 
-function selectOutcome(idx) {
-  selectedOutcomeIdx = idx;
-  document.querySelectorAll('.ticket-out .out-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === idx);
-  });
-}
+  // Calculate contracts: stake / price
+  const priceDecimal = price / 100;
+  const contracts = Math.max(5, Math.floor(stake / priceDecimal));
 
-function setSide(side) {
-  selectedSide = side;
-  document.getElementById('side-back').classList.toggle('active', side === 'back');
-  document.getElementById('side-lay').classList.toggle('active', side === 'lay');
-}
-
-function updateTicket() {
-  const price = parseInt(document.getElementById('ord-price').value) || 50;
-  const size = parseFloat(document.getElementById('ord-size').value) || 10;
-  const contracts = Math.floor(size / (price / 100));
-  const cost = (price / 100 * contracts).toFixed(2);
-  const profit = (contracts - parseFloat(cost)).toFixed(2);
-  document.getElementById('t-payout').textContent =
-    `${contracts} contracts | Cost: $${cost} | Profit: $${profit}`;
-}
-
-async function placeOrder() {
-  if (!currentOutcomes[selectedOutcomeIdx]) {
-    alert('Select an outcome first');
-    return;
-  }
-
-  const outcome = currentOutcomes[selectedOutcomeIdx];
-  const price = parseInt(document.getElementById('ord-price').value);
-  const size = parseFloat(document.getElementById('ord-size').value);
-  const tokenId = selectedSide === 'back' ? outcome.yes_token : outcome.no_token;
-  const apiSide = selectedSide === 'back' ? 'BUY' : 'SELL';
-
-  const label = outcome.outcome || outcome.question.substring(0, 20);
-  if (!confirm(`${selectedSide.toUpperCase()} ${label}\n${size} contracts @ ${price}¢\nToken: ${tokenId?.substring(0, 20)}...\n\nConfirm?`)) {
-    return;
-  }
+  // Show toast
+  const toast = document.getElementById('order-toast');
+  toast.style.display = 'block';
+  toast.style.color = side === 'back' ? '#6abcff' : '#ff6a8a';
+  toast.textContent = `${side.toUpperCase()} ${label} ${contracts} @ ${price}¢ ...`;
 
   try {
     const resp = await fetch(`${API}/api/order`, {
@@ -760,20 +704,27 @@ async function placeOrder() {
       body: JSON.stringify({
         token_id: tokenId,
         price: price,
-        size: size,
+        size: contracts,
         side: apiSide,
       }),
     });
     const result = await resp.json();
     if (result.error) {
-      alert('Order failed: ' + result.error);
+      toast.style.color = '#ff4444';
+      toast.textContent = `FAILED: ${result.error}`;
     } else {
-      alert('Order placed!');
+      toast.style.color = '#00ff88';
+      toast.textContent = `FILLED: ${side.toUpperCase()} ${label} ${contracts} @ ${price}¢`;
       loadOrders();
+      loadBalance();
     }
   } catch (e) {
-    alert('Error: ' + e.message);
+    toast.style.color = '#ff4444';
+    toast.textContent = `ERROR: ${e.message}`;
   }
+
+  // Hide toast after 3s
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
 // ========== Orders & Positions ==========
@@ -823,8 +774,6 @@ async function cancelOrder(orderId) {
 document.getElementById('url-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') searchOrLoad();
 });
-
-updateTicket();
 
 // Load balance
 async function loadBalance() {
